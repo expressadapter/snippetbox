@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
-	"html/template"
 	"net/http"
 	"strconv"
+
+	"github.com/expressadapter/snippetbox/pkg/models"
 )
 
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
@@ -14,35 +15,34 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	files := []string{
-		"./ui/html/home.page.tmpl",
-		"./ui/html/base.layout.tmpl",
-		"./ui/html/footer.partial.tmpl",
-	}
-
-	ts, err := template.ParseFiles(files...)
+	s, err := app.snippets.Latest()
 
 	if err != nil {
 		app.serverError(w, err)
 		return
 	}
 
-	err = ts.Execute(w, nil)
+	app.render(w, r, "home.page.tmpl", &templateData{Snippets: s})
 
-	if err != nil {
-		app.serverError(w, err)
-	}
 }
 
 func (app *application) showSnippet(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.URL.Query().Get("id"))
-
 	if err != nil {
 		app.notFound(w)
 		return
 	}
-	//w.Write([]byte("Display specific snippet"))
-	fmt.Fprintf(w, "Display a specific snippet with id %d", id)
+
+	s, err := app.snippets.Get(id)
+
+	if err == models.ErrNoRecord {
+		app.notFound(w)
+		return
+	} else if err != nil {
+		app.serverError(w, err)
+		return
+	}
+	app.render(w, r, "show.page.tmpl", &templateData{Snippet: s})
 }
 
 func (app *application) createSnippet(w http.ResponseWriter, r *http.Request) {
@@ -54,5 +54,15 @@ func (app *application) createSnippet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Write([]byte("Create a snippet"))
+	title := "deneme"
+	content := "deneme deneme deneme"
+	expires := "7"
+
+	id, err := app.snippets.Insert(title, content, expires)
+
+	if err != nil {
+		app.serverError(w, err)
+	}
+
+	http.Redirect(w, r, fmt.Sprintf("/snippets?id=%d", id), http.StatusSeeOther)
 }
