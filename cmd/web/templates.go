@@ -1,11 +1,11 @@
 package main
 
 import (
+	"github.com/expressadapter/snippetbox/pkg/forms"
+	"github.com/expressadapter/snippetbox/pkg/models"
 	"html/template"
 	"path/filepath"
 	"time"
-
-	"github.com/expressadapter/snippetbox/pkg/models"
 )
 
 var functions = template.FuncMap{
@@ -14,6 +14,7 @@ var functions = template.FuncMap{
 
 type templateData struct {
 	CurrentYear int
+	Form        *forms.Form
 	Snippet     *models.Snippet
 	Snippets    []*models.Snippet
 }
